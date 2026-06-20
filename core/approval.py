@@ -374,10 +374,103 @@ class ApprovalEngine:
         return flow
 
     def can_proceed_to_release(self, flow: ApprovalFlow) -> bool:
-        """判断是否可以进入发布环节"""
-        if flow.channel == "hotfix" and flow.status == ApprovalFlowStatus.WAITING_RETROACTIVE:
-            return True
+        """判断是否可以进入发布环节 - 仅审批状态真正为 APPROVED 才允许"""
         return flow.status == ApprovalFlowStatus.APPROVED
+
+    def get_approval_status_summary(self, flow: ApprovalFlow) -> Dict[str, Any]:
+        """
+        获取审批流完整状态摘要（用于 approval-status 命令展示）
+        包含：四阶段详情、超时状态、当前下一步处理人
+        """
+        self.check_timeout(flow)
+        now = datetime.now()
+        stages_info = []
+        sorted_stages = sorted(flow.stages, key=lambda x: x.stage_order)
+
+        for s in sorted_stages:
+            timeout_flag = False
+            remaining_hours = None
+            if s.deadline:
+                deadline = datetime.fromisoformat(s.deadline)
+                if s.status == ApprovalStatus.PENDING and now > deadline:
+                    timeout_flag = True
+                elif s.status == ApprovalStatus.PENDING:
+                    delta = deadline - now
+                    remaining_hours = round(delta.total_seconds() / 3600, 2)
+
+            stages_info.append({
+                "stage_order": s.stage_order,
+                "stage_id": s.stage_id,
+                "stage_name": s.stage_name,
+                "role": s.role,
+                "description": s.description,
+                "approvers": list(s.approvers),
+                "status": s.status.value,
+                "status_label": {
+                    "pending": "待审批",
+                    "approved": "已通过",
+                    "rejected": "已驳回",
+                    "timeout": "已超时",
+                    "retroactive": "事后补签",
+                }.get(s.status.value, s.status.value),
+                "approved_by": s.approved_by,
+                "approved_at": s.approved_at,
+                "deadline": s.deadline,
+                "timeout_hours": s.timeout_hours,
+                "remaining_hours": remaining_hours,
+                "is_timeout": timeout_flag,
+                "comment": s.comment,
+            })
+
+        pending_stages = [s for s in sorted_stages if s.status == ApprovalStatus.PENDING]
+        if flow.parallel:
+            next_handlers = pending_stages
+        else:
+            next_handlers = pending_stages[:1] if pending_stages else []
+
+        next_step = None
+        if next_handlers:
+            next_step = {
+                "stage_order": next_handlers[0].stage_order,
+                "stage_id": next_handlers[0].stage_id,
+                "stage_name": next_handlers[0].stage_name,
+                "approvers": list(next_handlers[0].approvers),
+                "parallel_count": len(next_handlers),
+            }
+        elif flow.status == ApprovalFlowStatus.APPROVED:
+            next_step = {"message": "全部审批已通过，可进入灰度发布"}
+        elif flow.status == ApprovalFlowStatus.REJECTED:
+            next_step = {"message": f"审批已终止：{flow.final_comment}"}
+
+        overall = {
+            "flow_id": flow.flow_id,
+            "version": flow.version,
+            "channel": flow.channel,
+            "channel_name": flow.channel_name,
+            "submitter": flow.submitter,
+            "submit_time": flow.submit_time,
+            "emergency_reason": flow.emergency_reason,
+            "pre_check_id": flow.pre_check_id,
+            "status": flow.status.value,
+            "status_label": {
+                "initiated": "已创建",
+                "in_progress": "审批中",
+                "approved": "已通过",
+                "rejected": "已驳回",
+                "waiting_retroactive": "待事后补签",
+            }.get(flow.status.value, flow.status.value),
+            "completed_time": flow.completed_time,
+            "final_comment": flow.final_comment,
+            "parallel": flow.parallel,
+            "allow_retroactive": flow.allow_retroactive,
+        }
+
+        return {
+            "overall": overall,
+            "stages": stages_info,
+            "next_step": next_step,
+            "can_proceed": self.can_proceed_to_release(flow),
+        }
 
     # ---------- 内部方法 ----------
     def _evaluate_flow_status(self, flow: ApprovalFlow) -> None:

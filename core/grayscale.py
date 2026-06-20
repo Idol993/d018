@@ -8,7 +8,7 @@ import time
 import uuid
 import logging
 from dataclasses import dataclass, field, asdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
@@ -146,6 +146,8 @@ class Deployer:
 class GrayscaleReleaseEngine:
     """灰度发布引擎 - 编排整个发布/监控/熔断/回滚流程"""
 
+    COOLDOWN_FILE_NAME = "_cooldown_state.json"
+
     def __init__(
         self,
         deployer: Optional[Deployer] = None,
@@ -159,9 +161,88 @@ class GrayscaleReleaseEngine:
         self.data_dir = os.path.join(
             self.config.get("system.data_dir", "./data"), "deployment_logs"
         )
+        os.makedirs(self.data_dir, exist_ok=True)
+        self._cooldown_path = os.path.join(self.data_dir, self.COOLDOWN_FILE_NAME)
         self._on_circuit_breaker_callbacks: List[
             Callable[[CircuitBreakerReport], None]
         ] = []
+
+    # ---------- 冷却期管理 ----------
+    def _read_cooldown_state(self) -> Optional[Dict[str, Any]]:
+        if not os.path.exists(self._cooldown_path):
+            return None
+        try:
+            with open(self._cooldown_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning("读取冷却期状态失败: %s", e)
+            return None
+
+    def _write_cooldown_state(self, report: CircuitBreakerReport) -> None:
+        cooldown_min = self.thresholds["cooldown_minutes"]
+        rollback_at = report.rollback_completed_at or datetime.now().isoformat()
+        rollback_dt = datetime.fromisoformat(rollback_at)
+        cooldown_until = (rollback_dt + timedelta(minutes=cooldown_min)).isoformat()
+        state = {
+            "report_id": report.report_id,
+            "triggered_version": report.version,
+            "trigger_time": report.trigger_time,
+            "rollback_completed_at": rollback_at,
+            "cooldown_minutes": cooldown_min,
+            "cooldown_until": cooldown_until,
+            "previous_stable_version": report.previous_stable_version,
+            "trigger_stage": report.trigger_stage_name,
+            "affected_line_ids": list(report.affected_line_ids),
+            "breaches": list(report.breaches),
+        }
+        try:
+            with open(self._cooldown_path, "w", encoding="utf-8") as f:
+                json.dump(state, f, ensure_ascii=False, indent=2)
+            logger.info("冷却期状态已写入，冷却至: %s", cooldown_until)
+        except Exception as e:
+            logger.error("写入冷却期状态失败: %s", e)
+
+    def get_cooldown_info(self) -> Optional[Dict[str, Any]]:
+        """
+        检查当前是否处于冷却期
+        :return: 若在冷却期内返回详细信息，否则返回 None
+        """
+        state = self._read_cooldown_state()
+        if state is None:
+            return None
+        try:
+            cooldown_until = datetime.fromisoformat(state["cooldown_until"])
+            now = datetime.now()
+            if now >= cooldown_until:
+                return None
+            remaining = cooldown_until - now
+            remaining_min = round(remaining.total_seconds() / 60, 2)
+            info = dict(state)
+            info["remaining_minutes"] = remaining_min
+            info["active"] = True
+            return info
+        except Exception as e:
+            logger.warning("解析冷却期状态异常: %s", e)
+            return None
+
+    def check_cooldown_before_release(self) -> tuple[bool, Optional[Dict[str, Any]], str]:
+        """
+        发布前执行冷却期检查
+        :return: (是否允许发布, 冷却期信息(若有), 提示信息)
+        """
+        info = self.get_cooldown_info()
+        if info is None:
+            return True, None, "无冷却期限制"
+        msg = (
+            f"当前处于熔断冷却期内！"
+            f"上次熔断版本: {info['triggered_version']} | "
+            f"触发阶段: {info['trigger_stage']} | "
+            f"影响分拣线: {', '.join(info['affected_line_ids'])} | "
+            f"回滚完成: {info['rollback_completed_at']} | "
+            f"剩余冷却: {info['remaining_minutes']}分钟 | "
+            f"冷却至: {info['cooldown_until']}"
+        )
+        return False, info, msg
 
     def register_circuit_breaker_callback(
         self, callback: Callable[[CircuitBreakerReport], None]
