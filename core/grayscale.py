@@ -279,6 +279,20 @@ class GrayscaleReleaseEngine:
         if dry_run:
             logger.warning("当前为 DRY-RUN 演练模式，不会实际执行版本下发")
 
+        # ---------- 冷却期检查 ----------
+        ok, cool_info, cool_msg = self.check_cooldown_before_release()
+        if not ok:
+            logger.critical("❌ %s", cool_msg)
+            result.status = ReleaseStatus.PAUSED
+            result.error_msg = cool_msg
+            result.end_time = datetime.now().isoformat()
+            result.total_duration_seconds = round(time.time() - start_ts, 2)
+            path = result.save(self.data_dir)
+            logger.info("灰度发布（冷却期拒绝）报告已保存: %s", path)
+            return result
+        elif cool_info is None:
+            logger.info("✅ 冷却期校验通过（无冷却期限制）")
+
         stage_execs = [
             StageExecution(
                 stage_id=s["stage_id"],
@@ -339,6 +353,9 @@ class GrayscaleReleaseEngine:
 
                 if not rollback_done:
                     result.status = ReleaseStatus.TRIGGERED_CIRCUIT_BREAKER
+                else:
+                    # 回滚成功后写入冷却期状态
+                    self._write_cooldown_state(report)
                 break
 
             stage.status = ReleaseStageStatus.STABLE

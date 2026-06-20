@@ -154,6 +154,29 @@ class ApprovalEngine:
             logger.error("加载审批流失败 %s: %s", flow_id, e)
             return None
 
+    def load_flow_from_path(self, file_path: str) -> Optional[ApprovalFlow]:
+        """从任意指定文件路径加载审批流（与 load_flow 逻辑一致，便于外部传 flow-file）"""
+        if not os.path.exists(file_path):
+            logger.warning("审批流文件不存在: %s", file_path)
+            return None
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            stages = []
+            for sd in data.get("stages", []):
+                s = ApprovalStage(**{k: v for k, v in sd.items() if k != "status"})
+                s.status = ApprovalStatus(sd["status"])
+                stages.append(s)
+            flow = ApprovalFlow(
+                **{k: v for k, v in data.items() if k not in ("stages", "status")}
+            )
+            flow.status = ApprovalFlowStatus(data["status"])
+            flow.stages = stages
+            return flow
+        except Exception as e:
+            logger.error("从路径加载审批流失败 %s: %s", file_path, e)
+            return None
+
     def validate_stage_order(self, flow: ApprovalFlow, stage_id: str) -> tuple[bool, str]:
         """
         校验审批阶段顺序（仅常规串行审批需要严格顺序）

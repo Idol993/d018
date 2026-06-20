@@ -1,0 +1,103 @@
+{
+  "generated_at": "2026-06-20T10:47:33.505399",
+  "interval_seconds": 300,
+  "thresholds": {
+    "jam_rate_threshold": 0.005,
+    "mis_sort_rate_threshold": 0.003,
+    "downtime_count_threshold": 2,
+    "auto_rollback": true,
+    "restart_monitor_after_rollback": true,
+    "cooldown_minutes": 30
+  },
+  "snapshots": [
+    {
+      "timestamp": "2026-06-20T10:47:33.502763",
+      "line_ids": [
+        "AUX-001",
+        "AUX-002"
+      ],
+      "jam_rate": 0.00353,
+      "mis_sort_rate": 0.00196,
+      "downtime_count": 0,
+      "raw_response": {
+        "jam_rate": 0.00353,
+        "mis_sort_rate": 0.00196,
+        "downtime_count": 0,
+        "line_ids": [
+          "AUX-001",
+          "AUX-002"
+        ],
+        "generated_at": "2026-06-20T10:47:33.502785"
+      },
+      "fetch_success": true,
+      "error_msg": ""
+    },
+    {
+      "timestamp": "2026-06-20T10:47:33.503550",
+      "line_ids": [
+        "AUX-003",
+        "AUX-004"
+      ],
+      "jam_rate": 0.00281,
+      "mis_sort_rate": 0.00186,
+      "downtime_count": 0,
+      "raw_response": {
+        "jam_rate": 0.00281,
+        "mis_sort_rate": 0.00186,
+        "downtime_count": 0,
+        "line_ids": [
+          "AUX-003",
+          "AUX-004"
+        ],
+        "generated_at": "2026-06-20T10:47:33.503569"
+      },
+      "fetch_success": true,
+      "error_msg": ""
+    },
+    {
+      "timestamp": "2026-06-20T10:47:33.504302",
+      "line_ids": [
+        "CORE-001"
+      ],
+      "jam_rate": 0.00346,
+      "mis_sort_rate": 0.00072,
+      "downtime_count": 0,
+      "raw_response": {
+        "jam_rate": 0.00346,
+        "mis_sort_rate": 0.00072,
+        "downtime_count": 0,
+        "line_ids": [
+          "CORE-001"
+        ],
+        "generated_at": "2026-06-20T10:47:33.504317"
+      },
+      "fetch_success": true,
+      "error_msg": ""
+    },
+    {
+      "timestamp": "2026-06-20T10:47:33.504833",
+      "line_ids": [
+        "CORE-002",
+        "CORE-003",
+        "CORE-004"
+      ],
+      "jam_rate": 0.00276,
+      "mis_sort_rate": 0.00146,
+      "downtime_count": 0,
+      "raw_response": {
+        "jam_rate": 0.00276,
+        "mis_sort_rate": 0.00146,
+        "downtime_count": 0,
+        "line_ids": [
+          "CORE-002",
+          "CORE-003",
+          "CORE-004"
+        ],
+        "generated_at": "2026-06-20T10:47:33.504847"
+      },
+      "fetch_success": true,
+      "error_msg": ""
+    }
+  ],
+  "breaches": []
+}

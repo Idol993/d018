@@ -211,8 +211,43 @@ def cmd_deploy(args: argparse.Namespace) -> int:
             return 2
 
         if not approval_engine.can_proceed_to_release(loaded_flow):
-            logger.critical("❌ 审批流状态不允许发布: %s，当前状态: %s",
-                            approval_flow_id, loaded_flow.status.value)
+            status_summary = approval_engine.get_approval_status_summary(loaded_flow)
+            ov = status_summary["overall"]
+            stages = status_summary["stages"]
+            pending_lines = []
+            for s in stages:
+                mark = "✅" if s["status"] in ("approved", "retroactive") else \
+                       "❌" if s["status"] in ("rejected", "timeout") else "⏳"
+                extra = ""
+                if s["status"] == "pending":
+                    remain = s["remaining_hours"]
+                    if remain is not None:
+                        extra = f"（剩余{remain}小时）"
+                    elif s["is_timeout"]:
+                        extra = "（已超时）"
+                pending_lines.append(
+                    f"    [{mark}] 第{s['stage_order']}级 {s['stage_name']} "
+                    f"({s['status_label']}) {extra}"
+                )
+            pending_text = "\n".join(pending_lines)
+            if ov["status"] == "waiting_retroactive":
+                missing = [s["stage_name"] for s in stages if s["status"] == "pending"]
+                msg = (
+                    f"Hotfix审批单[{loaded_flow.flow_id}]仍有待补签阶段，不能进入灰度发布。\n"
+                    f"当前状态: {ov['status_label']}\n"
+                    f"待补签: {missing}\n{pending_text}"
+                )
+            else:
+                msg = (
+                    f"审批流 [{loaded_flow.flow_id}] 状态不允许发布。\n"
+                    f"当前状态: {ov['status_label']}\n{pending_text}"
+                )
+            logger.critical("❌ %s", msg)
+            notifier.notify(
+                "发布流程终止 - 审批流未通过",
+                msg,
+                NotificationLevel.CRITICAL,
+            )
             return 2
 
         logger.info("✅ 审批流校验通过 ID=%s 状态=%s 版本=%s",
@@ -222,6 +257,15 @@ def cmd_deploy(args: argparse.Namespace) -> int:
     logger.info("[阶段 3/4] 启动灰度发布、实时监控与自动熔断 ...")
     gs_engine = GrayscaleReleaseEngine()
     gs_engine.register_circuit_breaker_callback(notifier.notify_circuit_breaker)
+
+    cooldown_ok, cooldown_info, cooldown_msg = gs_engine.check_cooldown_before_release()
+    if not cooldown_ok:
+        logger.critical("❌ 冷却期校验失败，拒绝进入灰度发布：%s", cooldown_msg)
+        notifier.notify(
+            "发布流程终止 - 熔断冷却期内",
+            cooldown_msg,
+            NotificationLevel.CRITICAL,
+        )
 
     release_result = gs_engine.run(
         version=args.version,
@@ -247,9 +291,166 @@ def cmd_deploy(args: argparse.Namespace) -> int:
         logger.critical("🚨 发布过程触发熔断机制，已自动回滚至基线版本 %s",
                         release_result.baseline_version)
         return 3
+    elif release_result.status == ReleaseStatus.PAUSED:
+        logger.critical("⏸ 发布流程已暂停（冷却期拒绝），请等待冷却期结束后再试")
+        return 5
     else:
         logger.warning("发布流程非正常结束: %s", release_result.status.value)
         return 4
+
+
+# ===================== 新增命令：approval-status / pre-check-report =====================
+
+def cmd_approval_status(args: argparse.Namespace) -> int:
+    """查看审批流完整状态"""
+    import json
+    from core.approval import ApprovalEngine
+
+    logger = logging.getLogger("approval-status")
+    engine = ApprovalEngine()
+
+    # 支持传 flow_file 或 flow_id
+    flow_id = args.flow_id
+    flow_file = args.flow_file
+
+    if flow_file:
+        flow = engine.load_flow_from_path(flow_file) if hasattr(engine, "load_flow_from_path") else None
+        # 如果没有 load_flow_from_path，尝试从 flow_id 解析
+        if flow is None and os.path.exists(flow_file):
+            from core.approval import ApprovalFlow
+            flow = ApprovalFlow.load(flow_file)
+    elif flow_id:
+        flow = engine.load_flow(flow_id)
+    else:
+        logger.error("必须提供 --flow-id 或 --flow-file")
+        return 2
+
+    if flow is None:
+        logger.critical("❌ 审批流不存在: %s", flow_id or flow_file)
+        return 2
+
+    summary = engine.get_approval_status_summary(flow)
+    ov = summary["overall"]
+    stages = summary["stages"]
+    next_step = summary["next_step"]
+    can_proceed = summary["can_proceed"]
+
+    print()
+    print("=" * 70)
+    print(f"  审批流ID: {ov['flow_id']}")
+    print(f"  版本号:   {ov['version']}")
+    print(f"  通道:     {ov['channel_name']} ({ov['channel']})  {'[并行审批]' if ov['parallel'] else '[串行审批]'}")
+    print(f"  提交人:   {ov['submitter']}")
+    print(f"  提交时间: {ov['submit_time']}")
+    if ov["emergency_reason"]:
+        print(f"  紧急原因: {ov['emergency_reason']}")
+    print(f"  总体状态: {ov['status_label']}  "
+          f"{'✅ 可发布' if can_proceed else '❌ 不可发布'}")
+    if ov["completed_time"]:
+        print(f"  完成时间: {ov['completed_time']}")
+    if ov["final_comment"]:
+        print(f"  审批备注: {ov['final_comment']}")
+    print("=" * 70)
+    print()
+
+    header = f"{'级':<3} {'阶段名称':<14} {'状态':<8} {'审批人/角色':<16} {'截止时间':<22} {'审批人':<10}"
+    print(header)
+    print("-" * 90)
+
+    for s in stages:
+        deadline_str = s["deadline"] or "-"
+        if s["is_timeout"]:
+            deadline_str += " ⚠超时"
+        elif s["remaining_hours"] is not None:
+            deadline_str += f" (剩{s['remaining_hours']}h)"
+        approver = s["approved_by"] or "-"
+        if s["approved_at"]:
+            approver += f" @ {s['approved_at'][:19]}"
+        status_mark = {
+            "approved": "✅已通过",
+            "retroactive": "✅补签",
+            "pending": "⏳待审批",
+            "rejected": "❌驳回",
+            "timeout": "❌超时",
+        }.get(s["status"], s["status_label"])
+
+        print(
+            f"{s['stage_order']:<3} {s['stage_name']:<14} "
+            f"{status_mark:<8} {s['role']:<16} "
+            f"{deadline_str:<22} {approver:<10}"
+        )
+        if s["comment"]:
+            print(f"    备注: {s['comment']}")
+
+    print()
+    print("-" * 90)
+    if next_step:
+        if "message" in next_step:
+            print(f"下一步: {next_step['message']}")
+        else:
+            print(
+                f"下一步处理: 第{next_step['stage_order']}级 "
+                f"[{next_step['stage_name']}]，"
+                f"审批人: {', '.join(next_step['approvers'])}"
+            )
+            if next_step.get("parallel_count", 1) > 1:
+                print(f"        (并行审批，共 {next_step['parallel_count']} 个阶段可同时处理)")
+    print()
+
+    if args.export_json:
+        out_path = args.export_json
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(summary, f, ensure_ascii=False, indent=2)
+        logger.info("审批状态 JSON 已导出: %s", out_path)
+
+    return 0
+
+
+def cmd_pre_check_report(args: argparse.Namespace) -> int:
+    """查看前置校验报告（最近一次或指定ID）"""
+    import json
+    from core.pre_check import PreCheckEngine
+
+    logger = logging.getLogger("pre-check-report")
+    engine = PreCheckEngine()
+
+    if args.latest:
+        result = engine.load_latest()
+        if result is None:
+            logger.critical("❌ 未找到任何前置校验报告，请先运行 pre-check 命令")
+            return 2
+    elif args.check_id:
+        result = engine.load_result(args.check_id)
+        if result is None:
+            logger.critical("❌ 校验ID不存在: %s", args.check_id)
+            return 2
+    else:
+        logger.error("必须指定 --latest 或 --check-id <ID>")
+        return 2
+
+    print()
+    print(engine.build_terminal_summary(result))
+    print()
+
+    if args.export_json:
+        out_path = args.export_json
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(result.to_dict(), f, ensure_ascii=False, indent=2)
+        logger.info("JSON 报告已导出: %s", out_path)
+
+    if args.export_html:
+        from core.report import ReportEngine
+        reporter = ReportEngine()
+        paths = reporter.render_pre_check_report(result.to_dict())
+        logger.info("HTML 报告已生成: %s", paths)
+        if args.export_html:
+            import shutil
+            for p in paths:
+                if p.endswith(".html"):
+                    shutil.copyfile(p, args.export_html)
+                    logger.info("HTML 报告已复制到: %s", args.export_html)
+
+    return 0
 
 
 def cmd_drill(args: argparse.Namespace) -> int:
@@ -380,6 +581,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--approver", required=True, help="审批人")
     p.add_argument("--comment", default="", help="审批意见")
     p.set_defaults(func=cmd_approval_action)
+
+    # approval status (新增)
+    p = sub.add_parser("approval-status", help="查看审批流完整状态（四阶段/超时/下一步）")
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--flow-id", default=None, help="审批流ID（从磁盘加载）")
+    group.add_argument("--flow-file", default=None, help="审批流JSON文件路径")
+    p.add_argument("--export-json", default="", help="导出状态JSON到指定文件")
+    p.set_defaults(func=cmd_approval_status)
+
+    # pre-check report (新增)
+    p = sub.add_parser("pre-check-report", help="查看前置校验报告（最近一次/指定ID）")
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--latest", action="store_true", help="查看最近一次前置校验报告")
+    group.add_argument("--check-id", default=None, help="按校验ID查看报告")
+    p.add_argument("--export-json", default="", help="导出JSON到指定文件")
+    p.add_argument("--export-html", default="", help="导出HTML报表到指定文件")
+    p.set_defaults(func=cmd_pre_check_report)
 
     # deploy (full pipeline)
     p = sub.add_parser("deploy", help="执行完整发布流水线（校验→审批→灰度→熔断→报表）")

@@ -1,0 +1,81 @@
+{
+  "flow_id": "AFBC4B4A83D96C",
+  "version": "v2.4.0-hotfix",
+  "channel": "hotfix",
+  "channel_name": "紧急热修复",
+  "submitter": "oncall@company.com",
+  "submit_time": "2026-06-20T10:47:33.380509",
+  "emergency_reason": "交叉带分拣机卡件率异常飙升，需紧急修复",
+  "pre_check_id": "",
+  "status": "waiting_retroactive",
+  "stages": [
+    {
+      "stage_id": "equipment",
+      "stage_order": 1,
+      "stage_name": "设备安全评估",
+      "role": "mechanical_electrical_engineer",
+      "description": "机械与电气安全评估",
+      "approvers": [
+        "equipment@company.com"
+      ],
+      "status": "pending",
+      "approved_by": null,
+      "approved_at": null,
+      "comment": "",
+      "timeout_hours": 2,
+      "deadline": "2026-06-20T12:47:33.380509"
+    },
+    {
+      "stage_id": "technical",
+      "stage_order": 2,
+      "stage_name": "技术逻辑评估",
+      "role": "control_system_engineer",
+      "description": "控制逻辑与算法评估",
+      "approvers": [
+        "tech@company.com"
+      ],
+      "status": "pending",
+      "approved_by": null,
+      "approved_at": null,
+      "comment": "",
+      "timeout_hours": 2,
+      "deadline": "2026-06-20T12:47:33.380509"
+    },
+    {
+      "stage_id": "operation",
+      "stage_order": 3,
+      "stage_name": "运营影响评估",
+      "role": "operations_manager",
+      "description": "吞吐时效与业务影响评估",
+      "approvers": [
+        "ops@company.com"
+      ],
+      "status": "pending",
+      "approved_by": null,
+      "approved_at": null,
+      "comment": "",
+      "timeout_hours": 1,
+      "deadline": "2026-06-20T11:47:33.380509"
+    },
+    {
+      "stage_id": "safety",
+      "stage_order": 4,
+      "stage_name": "人员防护评估",
+      "role": "safety_officer",
+      "description": "急停与人员防护评估",
+      "approvers": [
+        "safety@company.com"
+      ],
+      "status": "approved",
+      "approved_by": "safety@company.com",
+      "approved_at": "2026-06-20T10:47:33.383329",
+      "comment": "安全补签",
+      "timeout_hours": 1,
+      "deadline": "2026-06-20T11:47:33.380509"
+    }
+  ],
+  "parallel": true,
+  "allow_retroactive": true,
+  "completed_time": null,
+  "final_comment": ""
+}

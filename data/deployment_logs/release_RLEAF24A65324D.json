@@ -1,0 +1,13 @@
+{
+  "release_id": "RLEAF24A65324D",
+  "version": "v9.9.9",
+  "baseline_version": "v1.0.0",
+  "approval_flow_id": "AF-TEST",
+  "start_time": "2026-06-20T10:46:06.575522",
+  "end_time": "2026-06-20T10:46:06.575960",
+  "status": "paused",
+  "stages": [],
+  "circuit_breaker_report": null,
+  "total_duration_seconds": 0.0,
+  "error_msg": "当前处于熔断冷却期内！上次熔断版本: v9.9.9-bad | 触发阶段: 辅助分拣线-低流量 | 影响分拣线: AUX-001, AUX-002 | 回滚完成: 2026-06-20T10:46:06.533625 | 剩余冷却: 30.0分钟 | 冷却至: 2026-06-20T11:16:06.533625"
+}

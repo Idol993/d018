@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>前置校验报告 - PC79FFA4A9ADD5</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: "Microsoft YaHei", Arial, sans-serif; margin: 0; padding: 30px; background: #f5f7fa; color: #333; }
+.container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+h1 { color: #1f2d3d; border-bottom: 3px solid #409eff; padding-bottom: 12px; margin-top: 0; }
+h2 { color: #409eff; margin-top: 30px; }
+h3 { color: #606266; }
+.meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; }
+.meta-item { background: #f0f9ff; padding: 10px 14px; border-left: 4px solid #409eff; border-radius: 4px; }
+.meta-item strong { color: #606266; display: block; font-size: 12px; margin-bottom: 4px; }
+.meta-item span { color: #1f2d3d; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th, td { border: 1px solid #ebeef5; padding: 10px 14px; text-align: left; font-size: 14px; }
+th { background: #f5f7fa; color: #606266; }
+tr:hover td { background: #fafbfc; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.badge-success { background: #f0f9eb; color: #67c23a; }
+.badge-fail { background: #fef0f0; color: #f56c6c; }
+.badge-warn { background: #fdf6ec; color: #e6a23c; }
+.badge-info { background: #ecf5ff; color: #409eff; }
+ul { line-height: 1.8; }
+.section { margin: 24px 0; }
+.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ebeef5; color: #909399; font-size: 12px; text-align: center; }
+pre { background: #2d2d2d; color: #ccc; padding: 16px; border-radius: 6px; overflow: auto; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>前置校验报告 - PC79FFA4A9ADD5</h1>
+<div class="meta-grid">
+  
+  <div class="meta-item"><strong>校验ID</strong><span>PC79FFA4A9ADD5</span></div>
+  
+  <div class="meta-item"><strong>版本号</strong><span>5.6.7-test</span></div>
+  
+  <div class="meta-item"><strong>发布通道</strong><span>hotfix</span></div>
+  
+  <div class="meta-item"><strong>执行时间</strong><span></span></div>
+  
+  <div class="meta-item"><strong>耗时</strong><span>0.00s</span></div>
+  
+  <div class="meta-item"><strong>总体结果</strong><span><span class="badge badge-fail">校验阻断</span></span></div>
+  
+  <div class="meta-item"><strong>摘要</strong><span>共 5 项校验，3 项通过，2 项未通过（阻断发布）。阻断项：sorting_accuracy, belt_availability</span></div>
+  
+</div>
+
+
+
+<div class="section">
+  <h2>核心指标明细</h2>
+  
+  
+  <table>
+    <thead><tr><th>校验项</th><th>状态</th><th>实际值</th><th>阈值</th><th>样本总数</th><th>通过样本</th><th>未通过样本</th><th>阻断原因</th></tr></thead>
+    <tbody>
+      
+      <tr><td>分拣准确率回归测试</td><td><span class="badge badge-fail">✗ 阻断</span></td><td>99.40%</td><td>99.50%</td><td>1000</td><td>-</td><td>-</td><td>分拣准确率低于阈值。建议：1) 检查图像识别模型参数；2) 复现 6 件错分包裹场景并修复；3) 使用更大样本集重新回归测试。</td></tr>
+      
+      <tr><td>皮带线运行率</td><td><span class="badge badge-fail">✗ 阻断</span></td><td>87.50%</td><td>98.00%</td><td>-</td><td>-</td><td>-</td><td>皮带线运行率低于阈值。建议：1) 检查 1 条停机皮带的机械/电气故障；2) 确认维护计划是否已完成；3) 评估是否具备发布条件。</td></tr>
+      
+      <tr><td>扫码器识别成功率</td><td><span class="badge badge-success">✓ 通过</span></td><td>100.00%</td><td>99.00%</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+      
+      <tr><td>PLC-WCS握手信号校验</td><td><span class="badge badge-success">✓ 通过</span></td><td>SUCCESS</td><td>SUCCESS</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+      
+      <tr><td>指令集兼容性校验</td><td><span class="badge badge-success">✓ 通过</span></td><td>COMPATIBLE</td><td>COMPATIBLE</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+      
+    </tbody>
+  </table>
+  
+  
+  
+</div>
+
+<div class="section">
+  <h2>阻断发布的校验项（2项）</h2>
+  
+  
+  <table>
+    <thead><tr><th>阻断项</th></tr></thead>
+    <tbody>
+      
+      <tr><td>sorting_accuracy</td></tr>
+      
+      <tr><td>belt_availability</td></tr>
+      
+    </tbody>
+  </table>
+  
+  
+  
+</div>
+
+
+
+<div class="footer">由自动分拣设备发布与回滚平台自动生成 · 生成时间 2026-06-20T10:47:33.572126</div>
+</div>
+</body>
+</html>

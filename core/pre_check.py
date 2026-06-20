@@ -36,12 +36,23 @@ class PreCheckResult:
     check_id: str
     version: str
     start_time: str
+    channel: str = "normal"
     end_time: str = ""
     duration_seconds: float = 0.0
     all_passed: bool = False
     results: List[CheckItemResult] = field(default_factory=list)
     blocking_items: List[str] = field(default_factory=list)
     summary: str = ""
+
+    @property
+    def executed_at(self) -> str:
+        """兼容字段：执行时间"""
+        return self.end_time or self.start_time
+
+    @property
+    def channel_label(self) -> str:
+        """兼容字段：通道中文标签"""
+        return "常规迭代" if self.channel == "normal" else "紧急热修复"
 
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
@@ -53,6 +64,39 @@ class PreCheckResult:
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
         return file_path
+
+    @staticmethod
+    def load(file_path: str) -> "PreCheckResult":
+        """从JSON文件加载 PreCheckResult"""
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        items_data = data.get("results", [])
+        items = []
+        for it in items_data:
+            ci = CheckItemResult(
+                check_name=it["check_name"],
+                check_key=it["check_key"],
+                passed=it["passed"],
+                actual_value=it.get("actual_value", ""),
+                threshold_value=it.get("threshold_value", ""),
+                description=it.get("description", ""),
+                suggestion=it.get("suggestion", ""),
+                details=it.get("details"),
+            )
+            items.append(ci)
+        obj = PreCheckResult(
+            check_id=data["check_id"],
+            version=data["version"],
+            start_time=data["start_time"],
+            channel=data.get("channel", "normal"),
+            end_time=data.get("end_time", ""),
+            duration_seconds=float(data.get("duration_seconds", 0.0)),
+            all_passed=bool(data.get("all_passed", False)),
+            results=items,
+            blocking_items=list(data.get("blocking_items", [])),
+            summary=data.get("summary", ""),
+        )
+        return obj
 
 
 class MetricsProvider:
@@ -192,6 +236,7 @@ class PreCheckEngine:
             check_id=check_id,
             version=version,
             start_time=start_time,
+            channel=channel,
         )
 
         check_runners: List[Callable[[], CheckItemResult]] = [
@@ -361,6 +406,83 @@ class PreCheckEngine:
             logger.info("  %s [%s] %s: 实际=%s 阈值=%s",
                         status, item.check_key, item.check_name,
                         item.actual_value, item.threshold_value)
+
+    # ---------- 报告查看 ----------
+    def load_result(self, check_id: str) -> Optional[PreCheckResult]:
+        """按 check_id 加载校验报告"""
+        path = os.path.join(self.data_dir, f"precheck_{check_id}.json")
+        if not os.path.exists(path):
+            return None
+        return PreCheckResult.load(path)
+
+    def load_latest(self) -> Optional[PreCheckResult]:
+        """加载最近一次前置校验报告（按文件修改时间排序）"""
+        if not os.path.exists(self.data_dir):
+            return None
+        files = []
+        for fn in os.listdir(self.data_dir):
+            if fn.startswith("precheck_") and fn.endswith(".json"):
+                fp = os.path.join(self.data_dir, fn)
+                mtime = os.path.getmtime(fp)
+                files.append((mtime, fp))
+        if not files:
+            return None
+        files.sort(key=lambda x: x[0], reverse=True)
+        return PreCheckResult.load(files[0][1])
+
+    def build_terminal_summary(self, result: PreCheckResult) -> str:
+        """
+        生成终端可读的核心指标摘要，包含：样本数、通过状态、阻断原因
+        """
+        lines = []
+        lines.append(f"====== 前置校验报告 [{result.check_id}] ======")
+        lines.append(f"版本: {result.version}  通道: {result.channel_label}")
+        lines.append(f"执行时间: {result.executed_at}  耗时: {result.duration_seconds}s")
+        lines.append(
+            f"总体结果: {'✅ 通过' if result.all_passed else '❌ 阻断（禁止发布）'}"
+        )
+        lines.append(f"摘要: {result.summary}")
+        lines.append("")
+        lines.append("核心指标明细:")
+        lines.append(
+            f"  {'序号':<3} {'校验项':<20} {'状态':<5} {'实际值':<16} {'阈值':<12} "
+            f"{'样本总数':<10} {'通过样本':<10} {'阻断原因（如未通过）'}"
+        )
+        lines.append("  " + "-" * 110)
+
+        for idx, item in enumerate(result.results, 1):
+            status_mark = "✓" if item.passed else "✗"
+            d = item.details or {}
+            sample_total = d.get("sample_size", d.get("total_samples", d.get("total_hours", "-")))
+            sample_passed = d.get(
+                "correct", d.get("running_hours", d.get("successful_scans", "-"))
+            )
+            block_reason = ""
+            if not item.passed:
+                parts = []
+                if d.get("metric"):
+                    parts.append(f"指标{d['metric']}不达标")
+                if item.suggestion:
+                    parts.append(item.suggestion[:60])
+                block_reason = "; ".join(parts) if parts else "未达阈值"
+
+            lines.append(
+                f"  {idx:<3} {item.check_name:<18} {status_mark:<5} "
+                f"{str(item.actual_value):<16} {str(item.threshold_value):<12} "
+                f"{str(sample_total):<10} {str(sample_passed):<10} {block_reason}"
+            )
+
+        if result.blocking_items:
+            lines.append("")
+            lines.append(f"阻断发布的校验项 ({len(result.blocking_items)}):")
+            for b in result.blocking_items:
+                lines.append(f"  ❌ {b}")
+
+        lines.append("")
+        lines.append(
+            f"完整 JSON: {os.path.join(self.data_dir, f'precheck_{result.check_id}.json')}"
+        )
+        return "\n".join(lines)
 
 
 def run_pre_check(version: str, channel: str = "normal") -> PreCheckResult:

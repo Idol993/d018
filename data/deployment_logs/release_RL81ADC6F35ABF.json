@@ -1,0 +1,102 @@
+{
+  "release_id": "RL81ADC6F35ABF",
+  "version": "v2.4.0-test",
+  "baseline_version": "v2.3.1",
+  "approval_flow_id": "AF-TEST",
+  "start_time": "2026-06-20T10:47:33.501873",
+  "end_time": "2026-06-20T10:47:33.505068",
+  "status": "completed",
+  "stages": [
+    {
+      "stage_id": 1,
+      "stage_name": "辅助分拣线-低流量",
+      "line_ids": [
+        "AUX-001",
+        "AUX-002"
+      ],
+      "description": "辅助分拣区域，低流量验证",
+      "traffic_percentage": 5,
+      "stable_monitor_minutes": 15,
+      "status": "stable",
+      "deploy_started_at": "2026-06-20T10:47:33.502467",
+      "deploy_finished_at": "2026-06-20T10:47:33.502618",
+      "monitor_finished_at": "2026-06-20T10:47:33.502939",
+      "rollback_triggered_at": null,
+      "rollback_finished_at": null,
+      "breaches": [],
+      "deploy_logs": [
+        "[DRY-RUN] 模拟向 ['AUX-001', 'AUX-002'] 部署 v2.4.0-test"
+      ],
+      "error_msg": ""
+    },
+    {
+      "stage_id": 2,
+      "stage_name": "辅助分拣线-中流量",
+      "line_ids": [
+        "AUX-003",
+        "AUX-004"
+      ],
+      "description": "辅助分拣区域，中流量验证",
+      "traffic_percentage": 15,
+      "stable_monitor_minutes": 20,
+      "status": "stable",
+      "deploy_started_at": "2026-06-20T10:47:33.503087",
+      "deploy_finished_at": "2026-06-20T10:47:33.503387",
+      "monitor_finished_at": "2026-06-20T10:47:33.503721",
+      "rollback_triggered_at": null,
+      "rollback_finished_at": null,
+      "breaches": [],
+      "deploy_logs": [
+        "[DRY-RUN] 模拟向 ['AUX-003', 'AUX-004'] 部署 v2.4.0-test"
+      ],
+      "error_msg": ""
+    },
+    {
+      "stage_id": 3,
+      "stage_name": "交叉带分拣线-低流量",
+      "line_ids": [
+        "CORE-001"
+      ],
+      "description": "核心交叉带分拣线，低流量验证",
+      "traffic_percentage": 20,
+      "stable_monitor_minutes": 30,
+      "status": "stable",
+      "deploy_started_at": "2026-06-20T10:47:33.503821",
+      "deploy_finished_at": "2026-06-20T10:47:33.504114",
+      "monitor_finished_at": "2026-06-20T10:47:33.504472",
+      "rollback_triggered_at": null,
+      "rollback_finished_at": null,
+      "breaches": [],
+      "deploy_logs": [
+        "[DRY-RUN] 模拟向 ['CORE-001'] 部署 v2.4.0-test"
+      ],
+      "error_msg": ""
+    },
+    {
+      "stage_id": 4,
+      "stage_name": "交叉带分拣线-全流量",
+      "line_ids": [
+        "CORE-002",
+        "CORE-003",
+        "CORE-004"
+      ],
+      "description": "核心交叉带分拣线，全流量发布",
+      "traffic_percentage": 100,
+      "stable_monitor_minutes": 60,
+      "status": "stable",
+      "deploy_started_at": "2026-06-20T10:47:33.504580",
+      "deploy_finished_at": "2026-06-20T10:47:33.504697",
+      "monitor_finished_at": "2026-06-20T10:47:33.504989",
+      "rollback_triggered_at": null,
+      "rollback_finished_at": null,
+      "breaches": [],
+      "deploy_logs": [
+        "[DRY-RUN] 模拟向 ['CORE-002', 'CORE-003', 'CORE-004'] 部署 v2.4.0-test"
+      ],
+      "error_msg": ""
+    }
+  ],
+  "circuit_breaker_report": null,
+  "total_duration_seconds": 0.0,
+  "error_msg": ""
+}

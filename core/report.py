@@ -424,6 +424,101 @@ class ReportEngine:
         logger.info("发布报表已生成: %s", paths)
         return paths
 
+    def render_pre_check_report(self, check_data: Dict[str, Any]) -> List[str]:
+        """将前置校验结果渲染为报表"""
+        paths: List[str] = []
+        cid = check_data.get("check_id", "unknown")
+
+        if "json" in self.formats:
+            p = os.path.join(self.output_dir, f"precheck_{cid}.json")
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(check_data, f, ensure_ascii=False, indent=2)
+            paths.append(p)
+
+        if "html" in self.formats:
+            p = os.path.join(self.output_dir, f"precheck_{cid}.html")
+            all_passed = check_data.get("all_passed", False)
+            status_badge = (
+                '<span class="badge badge-success">校验通过</span>' if all_passed
+                else '<span class="badge badge-fail">校验阻断</span>'
+            )
+            channel_label = check_data.get("channel_label", check_data.get("channel", ""))
+            meta = {
+                "校验ID": cid,
+                "版本号": check_data.get("version", ""),
+                "发布通道": channel_label,
+                "执行时间": check_data.get("executed_at", ""),
+                "耗时": f"{check_data.get('duration_seconds', 0):.2f}s",
+                "总体结果": status_badge,
+                "摘要": check_data.get("summary", ""),
+            }
+
+            sections: List[Dict[str, Any]] = []
+
+            rows = []
+            status_map = {
+                True: ("badge-success", "✓ 通过"),
+                False: ("badge-fail", "✗ 阻断"),
+            }
+            for item in check_data.get("results", []):
+                passed = item.get("passed", False)
+                cls, txt = status_map.get(passed, status_map[False])
+                d = item.get("details") or {}
+                total = d.get("sample_size", d.get("total_samples", d.get("total_hours", "-")))
+                passed_cnt = d.get(
+                    "correct", d.get("running_hours", d.get("successful_scans", "-"))
+                )
+                failed_cnt = d.get(
+                    "misclassified", d.get("downtime_hours", d.get("failed_scans", "-"))
+                )
+                if failed_cnt != "-" and isinstance(failed_cnt, int) and failed_cnt < 0:
+                    failed_cnt = 0
+                block_reason = "-"
+                if not passed:
+                    parts = []
+                    if d.get("metric"):
+                        parts.append(f"指标不达标")
+                    if item.get("suggestion"):
+                        parts.append(item["suggestion"])
+                    block_reason = "; ".join(parts) if parts else "未达到阈值"
+                rows.append([
+                    item.get("check_name"),
+                    f'<span class="badge {cls}">{txt}</span>',
+                    item.get("actual_value", "-"),
+                    item.get("threshold_value", "-"),
+                    total, passed_cnt, failed_cnt,
+                    block_reason,
+                ])
+            sections.append({
+                "title": "核心指标明细",
+                "table": {
+                    "headers": ["校验项", "状态", "实际值", "阈值",
+                                "样本总数", "通过样本", "未通过样本", "阻断原因"],
+                    "rows": rows,
+                },
+            })
+
+            blocking = check_data.get("blocking_items", [])
+            if blocking:
+                rows = [[b] for b in blocking]
+                sections.append({
+                    "title": f"阻断发布的校验项（{len(blocking)}项）",
+                    "table": {"headers": ["阻断项"], "rows": rows},
+                })
+
+            html = Template(HTML_TEMPLATE).render(
+                title=f"前置校验报告 - {cid}",
+                meta=meta,
+                sections=sections,
+                generated_at=datetime.now().isoformat(),
+            )
+            with open(p, "w", encoding="utf-8") as f:
+                f.write(html)
+            paths.append(p)
+
+        logger.info("前置校验报表已生成: %s", paths)
+        return paths
+
     def cleanup_old_records(self, days: Optional[int] = None) -> int:
         """清理过期演练/报表记录"""
         retention = days or int(self.config.get("report.drill_retention_days", 90))

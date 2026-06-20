@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>发布演练复盘报告 - Q2熔断演练</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: "Microsoft YaHei", Arial, sans-serif; margin: 0; padding: 30px; background: #f5f7fa; color: #333; }
+.container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+h1 { color: #1f2d3d; border-bottom: 3px solid #409eff; padding-bottom: 12px; margin-top: 0; }
+h2 { color: #409eff; margin-top: 30px; }
+h3 { color: #606266; }
+.meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; }
+.meta-item { background: #f0f9ff; padding: 10px 14px; border-left: 4px solid #409eff; border-radius: 4px; }
+.meta-item strong { color: #606266; display: block; font-size: 12px; margin-bottom: 4px; }
+.meta-item span { color: #1f2d3d; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th, td { border: 1px solid #ebeef5; padding: 10px 14px; text-align: left; font-size: 14px; }
+th { background: #f5f7fa; color: #606266; }
+tr:hover td { background: #fafbfc; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.badge-success { background: #f0f9eb; color: #67c23a; }
+.badge-fail { background: #fef0f0; color: #f56c6c; }
+.badge-warn { background: #fdf6ec; color: #e6a23c; }
+.badge-info { background: #ecf5ff; color: #409eff; }
+ul { line-height: 1.8; }
+.section { margin: 24px 0; }
+.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ebeef5; color: #909399; font-size: 12px; text-align: center; }
+pre { background: #2d2d2d; color: #ccc; padding: 16px; border-radius: 6px; overflow: auto; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>发布演练复盘报告 - Q2熔断演练</h1>
+<div class="meta-grid">
+  
+  <div class="meta-item"><strong>演练ID</strong><span>DR45A7AA16E622</span></div>
+  
+  <div class="meta-item"><strong>演练名称</strong><span>Q2熔断演练</span></div>
+  
+  <div class="meta-item"><strong>演练类型</strong><span>circuit_breaker</span></div>
+  
+  <div class="meta-item"><strong>开始时间</strong><span>2026-06-20T10:47:33.541325</span></div>
+  
+  <div class="meta-item"><strong>结束时间</strong><span>2026-06-20T10:47:33.541349</span></div>
+  
+  <div class="meta-item"><strong>参与人员</strong><span>张三, 李四, 王五</span></div>
+  
+  <div class="meta-item"><strong>整体结果</strong><span><span class="badge badge-success">通过</span></span></div>
+  
+</div>
+
+
+
+<div class="section">
+  <h2>演练描述</h2>
+  <p>模拟卡件率阈值突破场景，验证自动熔断与回滚</p>
+  
+  
+  
+</div>
+
+<div class="section">
+  <h2>演练场景明细</h2>
+  
+  
+  <table>
+    <thead><tr><th>场景</th><th>类型</th><th>描述</th><th>预期</th><th>实际结果</th><th>耗时</th><th>状态</th></tr></thead>
+    <tbody>
+      
+      <tr><td>卡件率异常飙升</td><td>jam_rate_anomaly</td><td>模拟卡件率达到1.2%</td><td>系统自动熔断并回滚</td><td>系统于0.8秒内检测到异常，触发熔断，2.3秒内完成回滚</td><td>3.1s</td><td><span class="badge badge-success">通过</span></td></tr>
+      
+    </tbody>
+  </table>
+  
+  
+  
+</div>
+
+<div class="section">
+  <h2>Action Items</h2>
+  
+  
+  <table>
+    <thead><tr><th>事项</th><th>责任人</th><th>截止日期</th><th>状态</th></tr></thead>
+    <tbody>
+      
+      <tr><td>每月演练一次</td><td>运维组</td><td>每月1号</td><td>待执行</td></tr>
+      
+    </tbody>
+  </table>
+  
+  
+  
+</div>
+
+<div class="section">
+  <h2>经验教训</h2>
+  
+  
+  
+  <ul><li>自动熔断有效降低故障影响面</li></ul>
+  
+  
+</div>
+
+<div class="section">
+  <h2>结论</h2>
+  <p>演练通过</p>
+  
+  
+  
+</div>
+
+
+
+<div class="footer">由自动分拣设备发布与回滚平台自动生成 · 生成时间 2026-06-20T10:47:33.549653</div>
+</div>
+</body>
+</html>

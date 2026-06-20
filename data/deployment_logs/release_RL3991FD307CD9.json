@@ -1,0 +1,13 @@
+{
+  "release_id": "RL3991FD307CD9",
+  "version": "9.9.9-new",
+  "baseline_version": "9.9.0-baseline",
+  "approval_flow_id": "AP-COOLDOWN-TEST",
+  "start_time": "2026-06-20T10:47:33.564257",
+  "end_time": "2026-06-20T10:47:33.564664",
+  "status": "paused",
+  "stages": [],
+  "circuit_breaker_report": null,
+  "total_duration_seconds": 0.0,
+  "error_msg": "当前处于熔断冷却期内！上次熔断版本: 2.3.4 | 触发阶段: 核心全流量 | 影响分拣线: CORE-001, CORE-002 | 回滚完成: 2026-06-20T10:42:33.563635 | 剩余冷却: 25.0分钟 | 冷却至: 2026-06-20T11:12:33.563638"
+}

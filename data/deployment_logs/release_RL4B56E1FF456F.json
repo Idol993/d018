@@ -1,0 +1,185 @@
+{
+  "release_id": "RL4B56E1FF456F",
+  "version": "v9.9.9-bad",
+  "baseline_version": "v2.3.1",
+  "approval_flow_id": "AF-CB-TEST",
+  "start_time": "2026-06-20T10:47:33.507915",
+  "end_time": "2026-06-20T10:47:33.511097",
+  "status": "rolled_back",
+  "stages": [
+    {
+      "stage_id": 1,
+      "stage_name": "辅助分拣线-低流量",
+      "line_ids": [
+        "AUX-001",
+        "AUX-002"
+      ],
+      "description": "辅助分拣区域，低流量验证",
+      "traffic_percentage": 5,
+      "stable_monitor_minutes": 15,
+      "status": "rolled_back",
+      "deploy_started_at": "2026-06-20T10:47:33.509189",
+      "deploy_finished_at": "2026-06-20T10:47:33.509372",
+      "monitor_finished_at": null,
+      "rollback_triggered_at": "2026-06-20T10:47:33.510159",
+      "rollback_finished_at": "2026-06-20T10:47:33.510613",
+      "breaches": [
+        {
+          "metric": "jam_rate",
+          "metric_label": "卡件率",
+          "actual_value": 0.999,
+          "threshold_value": 0.005,
+          "line_ids": [
+            "AUX-001",
+            "AUX-002"
+          ],
+          "timestamp": "2026-06-20T10:47:33.509508",
+          "description": "超过安全阈值 0.50%"
+        },
+        {
+          "metric": "mis_sort_rate",
+          "metric_label": "错分率",
+          "actual_value": 0.999,
+          "threshold_value": 0.003,
+          "line_ids": [
+            "AUX-001",
+            "AUX-002"
+          ],
+          "timestamp": "2026-06-20T10:47:33.509508",
+          "description": "超过安全阈值 0.300%"
+        },
+        {
+          "metric": "downtime_count",
+          "metric_label": "停机异常次数",
+          "actual_value": 999,
+          "threshold_value": 2,
+          "line_ids": [
+            "AUX-001",
+            "AUX-002"
+          ],
+          "timestamp": "2026-06-20T10:47:33.509508",
+          "description": "超过安全阈值 2次"
+        }
+      ],
+      "deploy_logs": [
+        "[DRY-RUN] 模拟向 ['AUX-001', 'AUX-002'] 部署 v9.9.9-bad"
+      ],
+      "error_msg": ""
+    },
+    {
+      "stage_id": 2,
+      "stage_name": "辅助分拣线-中流量",
+      "line_ids": [
+        "AUX-003",
+        "AUX-004"
+      ],
+      "description": "辅助分拣区域，中流量验证",
+      "traffic_percentage": 15,
+      "stable_monitor_minutes": 20,
+      "status": "rolled_back",
+      "deploy_started_at": null,
+      "deploy_finished_at": null,
+      "monitor_finished_at": null,
+      "rollback_triggered_at": null,
+      "rollback_finished_at": "2026-06-20T10:47:33.510616",
+      "breaches": [],
+      "deploy_logs": [],
+      "error_msg": ""
+    },
+    {
+      "stage_id": 3,
+      "stage_name": "交叉带分拣线-低流量",
+      "line_ids": [
+        "CORE-001"
+      ],
+      "description": "核心交叉带分拣线，低流量验证",
+      "traffic_percentage": 20,
+      "stable_monitor_minutes": 30,
+      "status": "rolled_back",
+      "deploy_started_at": null,
+      "deploy_finished_at": null,
+      "monitor_finished_at": null,
+      "rollback_triggered_at": null,
+      "rollback_finished_at": "2026-06-20T10:47:33.510618",
+      "breaches": [],
+      "deploy_logs": [],
+      "error_msg": ""
+    },
+    {
+      "stage_id": 4,
+      "stage_name": "交叉带分拣线-全流量",
+      "line_ids": [
+        "CORE-002",
+        "CORE-003",
+        "CORE-004"
+      ],
+      "description": "核心交叉带分拣线，全流量发布",
+      "traffic_percentage": 100,
+      "stable_monitor_minutes": 60,
+      "status": "rolled_back",
+      "deploy_started_at": null,
+      "deploy_finished_at": null,
+      "monitor_finished_at": null,
+      "rollback_triggered_at": null,
+      "rollback_finished_at": "2026-06-20T10:47:33.510619",
+      "breaches": [],
+      "deploy_logs": [],
+      "error_msg": ""
+    }
+  ],
+  "circuit_breaker_report": {
+    "report_id": "CB49E2B97754",
+    "version": "v9.9.9-bad",
+    "trigger_time": "2026-06-20T10:47:33.510392",
+    "affected_line_ids": [
+      "AUX-001",
+      "AUX-002"
+    ],
+    "trigger_stage_name": "辅助分拣线-低流量",
+    "breaches": [
+      {
+        "metric": "jam_rate",
+        "metric_label": "卡件率",
+        "actual_value": 0.999,
+        "threshold_value": 0.005,
+        "line_ids": [
+          "AUX-001",
+          "AUX-002"
+        ],
+        "timestamp": "2026-06-20T10:47:33.509508",
+        "description": "超过安全阈值 0.50%"
+      },
+      {
+        "metric": "mis_sort_rate",
+        "metric_label": "错分率",
+        "actual_value": 0.999,
+        "threshold_value": 0.003,
+        "line_ids": [
+          "AUX-001",
+          "AUX-002"
+        ],
+        "timestamp": "2026-06-20T10:47:33.509508",
+        "description": "超过安全阈值 0.300%"
+      },
+      {
+        "metric": "downtime_count",
+        "metric_label": "停机异常次数",
+        "actual_value": 999,
+        "threshold_value": 2,
+        "line_ids": [
+          "AUX-001",
+          "AUX-002"
+        ],
+        "timestamp": "2026-06-20T10:47:33.509508",
+        "description": "超过安全阈值 2次"
+      }
+    ],
+    "rollback_started": true,
+    "rollback_completed_at": "2026-06-20T10:47:33.510620",
+    "previous_stable_version": "v2.3.1",
+    "monitor_restarted": true,
+    "summary": "版本 v9.9.9-bad 在阶段 [辅助分拣线-低流量] 触发熔断: - 卡件率 实际值=0.999 阈值=0.005 - 错分率 实际值=0.999 阈值=0.003 - 停机异常次数 实际值=999 阈值=2 已自动回滚至 v2.3.1，冷却期 30 分钟内禁止再次发布。"
+  },
+  "total_duration_seconds": 0.0,
+  "error_msg": ""
+}

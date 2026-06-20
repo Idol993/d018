@@ -268,6 +268,9 @@ def test_report():
             return snap
 
     eng = GrayscaleReleaseEngine(monitor=MonitorEngine(metrics_client=AlwaysBreachClient2(mock=True)))
+    # 先删除冷却期文件，确保不会被前面的测试影响
+    if os.path.exists(eng._cooldown_path):
+        os.remove(eng._cooldown_path)
     bad_result = eng.run(
         version="v9.9.9", baseline_version="v1.0.0",
         approval_flow_id="AF-TEST", dry_run=True,
@@ -287,6 +290,216 @@ def test_report():
     log.info("   ✅ 报表模块通过")
 
 
+def test_hotfix_release_guard():
+    log.info("▶ 8. 测试 Hotfix 审批发布门槛（真正通过才放行）+ approval-status 摘要 ...")
+    from core.approval import ApprovalEngine, ApprovalFlowStatus
+
+    engine = ApprovalEngine()
+
+    # 8.1 创建 Hotfix 审批流
+    hotfix_flow = engine.create_flow(
+        version="9.9.9-hotfix",
+        channel="hotfix",
+        submitter="qa-lead",
+        pre_check_id="PC-HOTFIX-001",
+        emergency_reason="生产错分率飙升需紧急发布",
+    )
+    # 初始创建后还没开始审批 -> 不可发布
+    assert engine.can_proceed_to_release(hotfix_flow) is False, (
+        "刚创建的hotfix流不应直接允许发布"
+    )
+    log.info("   ✅ 刚创建 Hotfix 流: 不可发布")
+
+    # 8.2 让其中2个阶段通过，另外2个保持 pending
+    engine.approve(hotfix_flow, "equipment", "device-mgr", "设备侧无风险")
+    engine.approve(hotfix_flow, "technical", "tech-lead", "技术逻辑OK")
+    # 状态应为 WAITING_RETROACTIVE（并行审批中，仍有未完成）
+    after_two = engine.check_timeout(hotfix_flow)
+    assert engine.can_proceed_to_release(after_two) is False, (
+        "待补签状态的 hotfix 流不应允许发布"
+    )
+    log.info("   ✅ 待补签状态: 不可发布 (status=%s)", after_two.status.value)
+
+    # 8.3 用 approval-status 摘要验证状态描述
+    summary = engine.get_approval_status_summary(after_two)
+    assert summary["overall"]["status"] in (
+        "in_progress", "waiting_retroactive"
+    ), f"状态应为 in_progress 或 waiting_retroactive，得到 {summary['overall']['status']}"
+    assert summary["can_proceed"] is False
+    pending_names = [s["stage_name"] for s in summary["stages"] if s["status"] == "pending"]
+    assert len(pending_names) == 2, f"应剩2个待处理阶段，实际 {pending_names}"
+    assert summary["next_step"] and summary["next_step"].get("parallel_count") == 2, (
+        "Hotfix 应提示可并行处理剩余阶段"
+    )
+    log.info("   ✅ approval-status 摘要: 包含 %s 待补签阶段，下一步处理并行数量=%d",
+             pending_names, summary["next_step"]["parallel_count"])
+
+    # 8.4 全部补签完成 -> 真正 APPROVED -> 可发布
+    engine.sign_retroactive(after_two, "operation", "ops-mgr", "运营侧事后复核通过")
+    engine.sign_retroactive(after_two, "safety", "sec-mgr", "安全侧事后复核通过")
+    final = engine.check_timeout(after_two)
+    assert engine.can_proceed_to_release(final), (
+        "全部补签完成后 hotfix 流必须允许发布"
+    )
+    summary2 = engine.get_approval_status_summary(final)
+    assert summary2["can_proceed"] is True
+    assert "全部审批已通过" in summary2["next_step"]["message"]
+    log.info("   ✅ 全部补签完成: 状态=%s 下一步提示=%s，可发布",
+             final.status.value, summary2["next_step"]["message"])
+
+
+def test_cooldown():
+    log.info("▶ 9. 测试灰度发布冷却期机制 ...")
+    import os, json, time, tempfile
+    from datetime import datetime, timedelta
+    from core.grayscale import GrayscaleReleaseEngine, ReleaseStatus
+    from core.monitor import MonitorEngine, MetricsClient, ThresholdBreach, MetricsSnapshot
+
+    # 定义一个始终触发熔断的 Mock Client（本地类，供冷却期测试使用）
+    class AlwaysBreachClient(MetricsClient):
+        def _real_check(self, line_ids, thresholds):
+            return [ThresholdBreach(
+                metric_key="jam_rate", metric_label="卡件率",
+                actual_value=0.015, threshold_value=thresholds["jam_rate_threshold"],
+                line_ids=line_ids, timestamp=datetime.now().isoformat(),
+            )], MetricsSnapshot(
+                timestamp=datetime.now().isoformat(),
+                jam_rate=0.015, mis_sort_rate=0.0, downtime_count=0, line_ids=list(line_ids),
+            )
+
+    # 强制构造熔断+回滚场景，生成冷却期状态
+    engine = GrayscaleReleaseEngine()
+    # 先清除已有冷却期文件，避免测试被干扰
+    if os.path.exists(engine._cooldown_path):
+        os.remove(engine._cooldown_path)
+
+    # 9.1 初始状态：无冷却期
+    ok, info, msg = engine.check_cooldown_before_release()
+    assert ok and info is None, "初始状态应无冷却期"
+    log.info("   ✅ 初始状态: 无冷却期，允许发布")
+
+    # 9.2 强制构造冷却期状态文件（模拟最近一次刚刚熔断回滚）
+    fake_state = {
+        "report_id": "CB-FAKE-001",
+        "triggered_version": "2.3.4",
+        "trigger_time": (datetime.now() - timedelta(minutes=10)).isoformat(),
+        "rollback_completed_at": (datetime.now() - timedelta(minutes=5)).isoformat(),
+        "cooldown_minutes": 30,
+        "cooldown_until": (datetime.now() + timedelta(minutes=25)).isoformat(),
+        "previous_stable_version": "2.3.0",
+        "trigger_stage": "核心全流量",
+        "affected_line_ids": ["CORE-001", "CORE-002"],
+        "breaches": [
+            {"metric_label": "卡件率", "actual_value": 0.012, "threshold_value": 0.005}
+        ],
+    }
+    os.makedirs(os.path.dirname(engine._cooldown_path), exist_ok=True)
+    with open(engine._cooldown_path, "w", encoding="utf-8") as f:
+        json.dump(fake_state, f)
+
+    # 9.3 冷却期内：应被拒绝
+    ok, info, msg = engine.check_cooldown_before_release()
+    assert ok is False and info is not None, "冷却期内应拒绝发布"
+    assert info["triggered_version"] == "2.3.4"
+    assert "核心全流量" in msg, "提示里应包含触发阶段"
+    assert "CORE-001, CORE-002" in msg, "提示里应包含影响分拣线"
+    assert info["remaining_minutes"] > 0, "应存在剩余冷却时间"
+    log.info("   ✅ 冷却期内: 发布被拒绝 | 触发版本=%s | 剩余冷却=%.2fmin",
+             info["triggered_version"], info["remaining_minutes"])
+
+    # 9.4 真正调用 run() 应直接返回 PAUSED
+    mon = MonitorEngine()
+    mon.client = AlwaysBreachClient()  # 实际不会用到，因为冷却期先返回
+    engine2 = GrayscaleReleaseEngine(monitor=mon)
+    # 复制一份冷却期文件到新引擎目录（应该同一个）
+    res = engine2.run("9.9.9-new", "9.9.0-baseline", "AP-COOLDOWN-TEST", dry_run=True)
+    assert res.status == ReleaseStatus.PAUSED, (
+        f"冷却期内应返回 PAUSED，实际={res.status.value}"
+    )
+    assert "熔断冷却期" in res.error_msg, "error_msg 应包含冷却期提示"
+    log.info("   ✅ 灰度引擎 run() 在冷却期内返回 PAUSED，error_msg=%s",
+             res.error_msg[:80] + "...")
+
+    # 9.5 修改状态为冷却已到期，应恢复允许发布
+    expired_state = dict(fake_state)
+    expired_state["cooldown_until"] = (datetime.now() - timedelta(minutes=1)).isoformat()
+    with open(engine._cooldown_path, "w", encoding="utf-8") as f:
+        json.dump(expired_state, f)
+    ok, info, msg = engine.check_cooldown_before_release()
+    assert ok and info is None, "冷却期到期后应允许发布"
+    log.info("   ✅ 冷却期过期后: 恢复允许发布")
+    os.remove(engine._cooldown_path)
+
+
+def test_precheck_report_and_status():
+    log.info("▶ 10. 测试前置校验报告（最近一次+指定ID）+ approval-status 完整输出 ...")
+    import os, json, tempfile
+    from core.pre_check import PreCheckEngine, PreCheckResult
+
+    # 10.1 先做一次前置校验生成报告
+    pc_engine = PreCheckEngine()
+    result = pc_engine.run("5.6.7-test", channel="hotfix")
+    assert len(result.results) == 5, "Hotfix 应执行完整 5 项校验"
+    # 10.2 load_latest 能读到
+    latest = pc_engine.load_latest()
+    assert latest is not None and latest.check_id == result.check_id, (
+        "load_latest 应读到刚生成的报告"
+    )
+    log.info("   ✅ load_latest 能正确返回最近一次报告: %s", latest.check_id)
+    # 10.3 load_result 指定 ID
+    by_id = pc_engine.load_result(result.check_id)
+    assert by_id is not None and by_id.version == "5.6.7-test"
+    log.info("   ✅ load_result 按 ID 读取正确: version=%s", by_id.version)
+
+    # 10.4 不存在的 ID
+    assert pc_engine.load_result("NOT-EXIST-ID-12345") is None, "不存在 ID 应返回 None"
+    log.info("   ✅ 不存在 ID 返回 None")
+
+    # 10.5 build_terminal_summary 内容自洽
+    summary_text = pc_engine.build_terminal_summary(result)
+    assert "核心指标明细" in summary_text
+    assert result.check_id in summary_text
+    # 5 项指标都应该出现
+    for name in ["分拣准确率", "皮带线运行率", "扫码器识别", "PLC-WCS握手", "指令集兼容"]:
+        assert name in summary_text, f"终端摘要应包含 {name}"
+    log.info("   ✅ build_terminal_summary 包含全部 5 项指标名称")
+
+    # 10.6 测试 report.render_pre_check_report 生成 JSON+HTML
+    from core.report import ReportEngine
+    reporter = ReportEngine()
+    paths = reporter.render_pre_check_report(result.to_dict())
+    assert len(paths) >= 1
+    json_paths = [p for p in paths if p.endswith(".json")]
+    html_paths = [p for p in paths if p.endswith(".html")]
+    assert json_paths, "应生成 JSON 报告"
+    with open(json_paths[0], "r", encoding="utf-8") as f:
+        jr = json.load(f)
+    assert jr["check_id"] == result.check_id
+    assert len(jr["results"]) == 5
+    log.info("   ✅ render_pre_check_report JSON 报告生成成功，包含 %d 项校验", len(jr["results"]))
+    if html_paths:
+        with open(html_paths[0], "r", encoding="utf-8") as f:
+            html_text = f.read()
+        assert "样本总数" in html_text or "校验通过" in html_text
+        log.info("   ✅ render_pre_check_report HTML 报告渲染成功 (%s)", html_paths[0])
+
+    # 10.7 approval-status 四阶段完整输出（常规审批+跳级场景）
+    from core.approval import ApprovalEngine
+    ae = ApprovalEngine()
+    flow = ae.create_flow(
+        version="5.6.7", channel="normal", submitter="dev-a", pre_check_id=result.check_id
+    )
+    summary = ae.get_approval_status_summary(flow)
+    stages = summary["stages"]
+    assert len(stages) == 4
+    assert [s["stage_order"] for s in stages] == [1, 2, 3, 4]
+    assert summary["overall"]["status"] == "in_progress"
+    assert summary["next_step"]["stage_order"] == 1
+    assert summary["next_step"]["stage_id"] == "equipment"
+    log.info("   ✅ approval-status 四阶段顺序校验: 下一步=%s(第%d级)",
+             summary["next_step"]["stage_name"], summary["next_step"]["stage_order"])
+
+
 def main():
     log.info("=" * 60)
     log.info("自动分拣设备发布与回滚平台 - 冒烟测试（含修复点验证）")
@@ -299,6 +512,9 @@ def main():
         test_grayscale,
         test_notification,
         test_report,
+        test_hotfix_release_guard,
+        test_cooldown,
+        test_precheck_report_and_status,
     ]
     passed = 0
     failed = 0

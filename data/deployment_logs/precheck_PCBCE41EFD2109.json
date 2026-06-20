@@ -1,0 +1,100 @@
+{
+  "check_id": "PCBCE41EFD2109",
+  "version": "v7.8.9",
+  "start_time": "2026-06-20T10:48:10.606042",
+  "channel": "normal",
+  "end_time": "2026-06-20T10:48:10.606497",
+  "duration_seconds": 0.0,
+  "all_passed": false,
+  "results": [
+    {
+      "check_name": "分拣准确率回归测试",
+      "check_key": "sorting_accuracy",
+      "passed": true,
+      "actual_value": "100.00%",
+      "threshold_value": "99.50%",
+      "description": "基于 1000 件历史包裹数据的回归测试准确率",
+      "suggestion": "",
+      "details": {
+        "total_samples": 1000,
+        "correct_sorted": 1000,
+        "mis_sorted": 0,
+        "test_dataset": "historical_parcels_2026Q1"
+      }
+    },
+    {
+      "check_name": "皮带线运行率",
+      "check_key": "belt_availability",
+      "passed": false,
+      "actual_value": "87.50%",
+      "threshold_value": "98.00%",
+      "description": "近24小时全部皮带线运行率",
+      "suggestion": "皮带线运行率低于阈值。建议：1) 检查 1 条停机皮带的机械/电气故障；2) 确认维护计划是否已完成；3) 评估是否具备发布条件。",
+      "details": {
+        "total_lines": 8,
+        "running_lines": 7,
+        "stopped_lines": 1,
+        "measurement_window_hours": 24,
+        "downtime_records": []
+      }
+    },
+    {
+      "check_name": "扫码器识别成功率",
+      "check_key": "scanner_success_rate",
+      "passed": false,
+      "actual_value": "98.07%",
+      "threshold_value": "99.00%",
+      "description": "近24小时全部扫码器综合识别成功率",
+      "suggestion": "扫码器识别成功率低于阈值。建议：1) 检查清洁镜头；2) 针对失败条码类型 ['CODE128_damaged', 'QR_folded'] 优化识别算法；3) 更换老化扫码设备。",
+      "details": {
+        "total_scanners": 24,
+        "scanned_count": 50000,
+        "success_count": 49033,
+        "failed_count": 967,
+        "failed_barcode_types": [
+          "CODE128_damaged",
+          "QR_folded"
+        ]
+      }
+    },
+    {
+      "check_name": "PLC-WCS握手信号校验",
+      "check_key": "plc_wcs_handshake",
+      "passed": true,
+      "actual_value": "SUCCESS",
+      "threshold_value": "SUCCESS",
+      "description": "PLC控制器与WCS控制系统间的握手信号与通信状态",
+      "suggestion": "",
+      "details": {
+        "plc_ip_list": [
+          "192.168.1.10",
+          "192.168.1.11"
+        ],
+        "wcs_endpoint": "http://wcs.internal/api/v1/plc/handshake",
+        "handshake_protocol": "OPC-UA",
+        "last_heartbeat": "2026-06-20T10:48:10.606487"
+      }
+    },
+    {
+      "check_name": "指令集兼容性校验",
+      "check_key": "instruction_set_compatibility",
+      "passed": true,
+      "actual_value": "COMPATIBLE",
+      "threshold_value": "COMPATIBLE",
+      "description": "待发布版本 v7.8.9 与基线版本的指令集兼容性",
+      "suggestion": "",
+      "details": {
+        "target_version": "v7.8.9",
+        "baseline_version": "v2.3.1",
+        "supported_instructions": 156,
+        "deprecated_instructions": 0,
+        "breaking_changes": []
+      }
+    }
+  ],
+  "blocking_items": [
+    "belt_availability",
+    "scanner_success_rate"
+  ],
+  "summary": "共 5 项校验，3 项通过，2 项未通过（阻断发布）。阻断项：belt_availability, scanner_success_rate"
+}

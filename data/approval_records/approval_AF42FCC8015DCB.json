@@ -1,0 +1,81 @@
+{
+  "flow_id": "AF42FCC8015DCB",
+  "version": "9.9.9-hotfix",
+  "channel": "hotfix",
+  "channel_name": "紧急热修复",
+  "submitter": "qa-lead",
+  "submit_time": "2026-06-20T10:47:33.559422",
+  "emergency_reason": "生产错分率飙升需紧急发布",
+  "pre_check_id": "PC-HOTFIX-001",
+  "status": "approved",
+  "stages": [
+    {
+      "stage_id": "equipment",
+      "stage_order": 1,
+      "stage_name": "设备安全评估",
+      "role": "mechanical_electrical_engineer",
+      "description": "机械与电气安全评估",
+      "approvers": [
+        "equipment@company.com"
+      ],
+      "status": "approved",
+      "approved_by": "device-mgr",
+      "approved_at": "2026-06-20T10:47:33.561301",
+      "comment": "设备侧无风险",
+      "timeout_hours": 2,
+      "deadline": "2026-06-20T12:47:33.559422"
+    },
+    {
+      "stage_id": "technical",
+      "stage_order": 2,
+      "stage_name": "技术逻辑评估",
+      "role": "control_system_engineer",
+      "description": "控制逻辑与算法评估",
+      "approvers": [
+        "tech@company.com"
+      ],
+      "status": "approved",
+      "approved_by": "tech-lead",
+      "approved_at": "2026-06-20T10:47:33.561727",
+      "comment": "技术逻辑OK",
+      "timeout_hours": 2,
+      "deadline": "2026-06-20T12:47:33.559422"
+    },
+    {
+      "stage_id": "operation",
+      "stage_order": 3,
+      "stage_name": "运营影响评估",
+      "role": "operations_manager",
+      "description": "吞吐时效与业务影响评估",
+      "approvers": [
+        "ops@company.com"
+      ],
+      "status": "retroactive",
+      "approved_by": "ops-mgr",
+      "approved_at": "2026-06-20T10:47:33.562358",
+      "comment": "[事后补签] 运营侧事后复核通过",
+      "timeout_hours": 1,
+      "deadline": "2026-06-20T11:47:33.559422"
+    },
+    {
+      "stage_id": "safety",
+      "stage_order": 4,
+      "stage_name": "人员防护评估",
+      "role": "safety_officer",
+      "description": "急停与人员防护评估",
+      "approvers": [
+        "safety@company.com"
+      ],
+      "status": "retroactive",
+      "approved_by": "sec-mgr",
+      "approved_at": "2026-06-20T10:47:33.562728",
+      "comment": "[事后补签] 安全侧事后复核通过",
+      "timeout_hours": 1,
+      "deadline": "2026-06-20T11:47:33.559422"
+    }
+  ],
+  "parallel": true,
+  "allow_retroactive": true,
+  "completed_time": "2026-06-20T10:47:33.562735",
+  "final_comment": "全部审批通过"
+}
