@@ -1,0 +1,81 @@
+{
+  "flow_id": "AFF1F0EE534982",
+  "version": "v2.4.0-test",
+  "channel": "normal",
+  "channel_name": "常规迭代",
+  "submitter": "dev@company.com",
+  "submit_time": "2026-06-20T10:07:39.422670",
+  "emergency_reason": "",
+  "pre_check_id": "PC-TEST",
+  "status": "in_progress",
+  "stages": [
+    {
+      "stage_id": "equipment",
+      "stage_order": 1,
+      "stage_name": "设备安全评估",
+      "role": "mechanical_electrical_engineer",
+      "description": "机械与电气安全评估",
+      "approvers": [
+        "equipment@company.com"
+      ],
+      "status": "approved",
+      "approved_by": "equip@company.com",
+      "approved_at": "2026-06-20T10:07:39.425920",
+      "comment": "机械电气检查通过",
+      "timeout_hours": 24,
+      "deadline": "2026-06-21T10:07:39.422670"
+    },
+    {
+      "stage_id": "technical",
+      "stage_order": 2,
+      "stage_name": "技术逻辑评估",
+      "role": "control_system_engineer",
+      "description": "控制逻辑与算法评估",
+      "approvers": [
+        "tech@company.com"
+      ],
+      "status": "pending",
+      "approved_by": null,
+      "approved_at": null,
+      "comment": "",
+      "timeout_hours": 24,
+      "deadline": "2026-06-21T10:07:39.422670"
+    },
+    {
+      "stage_id": "operation",
+      "stage_order": 3,
+      "stage_name": "运营影响评估",
+      "role": "operations_manager",
+      "description": "吞吐时效与业务影响评估",
+      "approvers": [
+        "ops@company.com"
+      ],
+      "status": "pending",
+      "approved_by": null,
+      "approved_at": null,
+      "comment": "",
+      "timeout_hours": 12,
+      "deadline": "2026-06-20T22:07:39.422670"
+    },
+    {
+      "stage_id": "safety",
+      "stage_order": 4,
+      "stage_name": "人员防护评估",
+      "role": "safety_officer",
+      "description": "急停与人员防护评估",
+      "approvers": [
+        "safety@company.com"
+      ],
+      "status": "pending",
+      "approved_by": null,
+      "approved_at": null,
+      "comment": "",
+      "timeout_hours": 12,
+      "deadline": "2026-06-20T22:07:39.422670"
+    }
+  ],
+  "parallel": false,
+  "allow_retroactive": false,
+  "completed_time": null,
+  "final_comment": ""
+}

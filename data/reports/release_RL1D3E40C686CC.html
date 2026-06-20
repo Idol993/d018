@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>灰度发布报告 - RL1D3E40C686CC</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: "Microsoft YaHei", Arial, sans-serif; margin: 0; padding: 30px; background: #f5f7fa; color: #333; }
+.container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+h1 { color: #1f2d3d; border-bottom: 3px solid #409eff; padding-bottom: 12px; margin-top: 0; }
+h2 { color: #409eff; margin-top: 30px; }
+h3 { color: #606266; }
+.meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; }
+.meta-item { background: #f0f9ff; padding: 10px 14px; border-left: 4px solid #409eff; border-radius: 4px; }
+.meta-item strong { color: #606266; display: block; font-size: 12px; margin-bottom: 4px; }
+.meta-item span { color: #1f2d3d; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+th, td { border: 1px solid #ebeef5; padding: 10px 14px; text-align: left; font-size: 14px; }
+th { background: #f5f7fa; color: #606266; }
+tr:hover td { background: #fafbfc; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.badge-success { background: #f0f9eb; color: #67c23a; }
+.badge-fail { background: #fef0f0; color: #f56c6c; }
+.badge-warn { background: #fdf6ec; color: #e6a23c; }
+.badge-info { background: #ecf5ff; color: #409eff; }
+ul { line-height: 1.8; }
+.section { margin: 24px 0; }
+.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ebeef5; color: #909399; font-size: 12px; text-align: center; }
+pre { background: #2d2d2d; color: #ccc; padding: 16px; border-radius: 6px; overflow: auto; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>灰度发布报告 - RL1D3E40C686CC</h1>
+<div class="meta-grid">
+  
+  <div class="meta-item"><strong>发布ID</strong><span>RL1D3E40C686CC</span></div>
+  
+  <div class="meta-item"><strong>目标版本</strong><span>v9.9.9</span></div>
+  
+  <div class="meta-item"><strong>基线版本</strong><span>v1.0.0</span></div>
+  
+  <div class="meta-item"><strong>审批流ID</strong><span>AF-TEST</span></div>
+  
+  <div class="meta-item"><strong>开始时间</strong><span>2026-06-20T10:26:22.500024</span></div>
+  
+  <div class="meta-item"><strong>结束时间</strong><span>2026-06-20T10:26:22.501384</span></div>
+  
+  <div class="meta-item"><strong>总耗时</strong><span>0.00s</span></div>
+  
+  <div class="meta-item"><strong>最终状态</strong><span><span class="badge badge-warn">已回滚</span></span></div>
+  
+</div>
+
+
+
+<div class="section">
+  <h2>灰度阶段执行情况</h2>
+  
+  
+  <table>
+    <thead><tr><th>序号</th><th>阶段名</th><th>分拣线</th><th>流量占比</th><th>稳定观察</th><th>状态</th></tr></thead>
+    <tbody>
+      
+      <tr><td>1</td><td>辅助分拣线-低流量</td><td>AUX-001, AUX-002</td><td>5%</td><td>15min</td><td><span class="badge badge-warn">已回滚</span></td></tr>
+      
+      <tr><td>2</td><td>辅助分拣线-中流量</td><td>AUX-003, AUX-004</td><td>15%</td><td>20min</td><td><span class="badge badge-warn">已回滚</span></td></tr>
+      
+      <tr><td>3</td><td>交叉带分拣线-低流量</td><td>CORE-001</td><td>20%</td><td>30min</td><td><span class="badge badge-warn">已回滚</span></td></tr>
+      
+      <tr><td>4</td><td>交叉带分拣线-全流量</td><td>CORE-002, CORE-003, CORE-004</td><td>100%</td><td>60min</td><td><span class="badge badge-warn">已回滚</span></td></tr>
+      
+    </tbody>
+  </table>
+  
+  
+  
+</div>
+
+<div class="section">
+  <h2>熔断报告 - CB6EFE8FE4AB</h2>
+  <p>版本 v9.9.9 在阶段 [辅助分拣线-低流量] 触发熔断: - 卡件率 实际值=0.999 阈值=0.005 - 错分率 实际值=0.999 阈值=0.003 - 停机异常次数 实际值=999 阈值=2 已自动回滚至 v1.0.0，冷却期 30 分钟内禁止再次发布。</p>
+  
+  
+  
+</div>
+
+<div class="section">
+  <h2>阈值突破明细</h2>
+  
+  
+  <table>
+    <thead><tr><th>指标</th><th>实际值</th><th>阈值</th><th>影响分拣线</th><th>触发时间</th></tr></thead>
+    <tbody>
+      
+      <tr><td>卡件率</td><td>0.999</td><td>0.005</td><td>AUX-001, AUX-002</td><td>2026-06-20T10:26:22.500604</td></tr>
+      
+      <tr><td>错分率</td><td>0.999</td><td>0.003</td><td>AUX-001, AUX-002</td><td>2026-06-20T10:26:22.500604</td></tr>
+      
+      <tr><td>停机异常次数</td><td>999</td><td>2</td><td>AUX-001, AUX-002</td><td>2026-06-20T10:26:22.500604</td></tr>
+      
+    </tbody>
+  </table>
+  
+  
+  
+</div>
+
+<div class="section">
+  <h2>熔断处置详情</h2>
+  
+  
+  <table>
+    <thead><tr><th>项目</th><th>值</th></tr></thead>
+    <tbody>
+      
+      <tr><td>触发阶段</td><td>辅助分拣线-低流量</td></tr>
+      
+      <tr><td>影响分拣线</td><td>AUX-001, AUX-002</td></tr>
+      
+      <tr><td>触发时间</td><td>2026-06-20T10:26:22.501149</td></tr>
+      
+      <tr><td>回滚基线版本</td><td>v1.0.0</td></tr>
+      
+      <tr><td>已自动回滚</td><td>是</td></tr>
+      
+      <tr><td>回滚完成时间</td><td>2026-06-20T10:26:22.501330</td></tr>
+      
+      <tr><td>监控已重启</td><td>是</td></tr>
+      
+    </tbody>
+  </table>
+  
+  
+  
+</div>
+
+
+
+<div class="footer">由自动分拣设备发布与回滚平台自动生成 · 生成时间 2026-06-20T10:26:22.506457</div>
+</div>
+</body>
+</html>

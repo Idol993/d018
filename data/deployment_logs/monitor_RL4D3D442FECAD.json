@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-06-20T10:26:22.456849",
+  "interval_seconds": 300,
+  "thresholds": {
+    "jam_rate_threshold": 0.005,
+    "mis_sort_rate_threshold": 0.003,
+    "downtime_count_threshold": 2,
+    "auto_rollback": true,
+    "restart_monitor_after_rollback": true,
+    "cooldown_minutes": 30
+  },
+  "snapshots": [
+    {
+      "timestamp": "2026-06-20T10:26:22.455372",
+      "line_ids": [
+        "AUX-001",
+        "AUX-002"
+      ],
+      "jam_rate": 0.00379,
+      "mis_sort_rate": 0.00088,
+      "downtime_count": 0,
+      "raw_response": {
+        "jam_rate": 0.00379,
+        "mis_sort_rate": 0.00088,
+        "downtime_count": 0,
+        "line_ids": [
+          "AUX-001",
+          "AUX-002"
+        ],
+        "generated_at": "2026-06-20T10:26:22.455383"
+      },
+      "fetch_success": true,
+      "error_msg": ""
+    },
+    {
+      "timestamp": "2026-06-20T10:26:22.455815",
+      "line_ids": [
+        "AUX-003",
+        "AUX-004"
+      ],
+      "jam_rate": 0.00588,
+      "mis_sort_rate": 0.00187,
+      "downtime_count": 2,
+      "raw_response": {
+        "jam_rate": 0.00588,
+        "mis_sort_rate": 0.00187,
+        "downtime_count": 2,
+        "line_ids": [
+          "AUX-003",
+          "AUX-004"
+        ],
+        "generated_at": "2026-06-20T10:26:22.455822"
+      },
+      "fetch_success": true,
+      "error_msg": ""
+    }
+  ],
+  "breaches": [
+    {
+      "metric": "jam_rate",
+      "metric_label": "卡件率",
+      "actual_value": 0.00588,
+      "threshold_value": 0.005,
+      "line_ids": [
+        "AUX-003",
+        "AUX-004"
+      ],
+      "timestamp": "2026-06-20T10:26:22.455815",
+      "description": "超过安全阈值 0.50%"
+    },
+    {
+      "metric": "downtime_count",
+      "metric_label": "停机异常次数",
+      "actual_value": 2,
+      "threshold_value": 2,
+      "line_ids": [
+        "AUX-003",
+        "AUX-004"
+      ],
+      "timestamp": "2026-06-20T10:26:22.455815",
+      "description": "超过安全阈值 2次"
+    }
+  ]
+}

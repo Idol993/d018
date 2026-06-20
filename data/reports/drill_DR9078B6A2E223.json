@@ -1,0 +1,45 @@
+{
+  "drill_id": "DR9078B6A2E223",
+  "drill_name": "Q2熔断演练",
+  "drill_type": "circuit_breaker",
+  "description": "模拟卡件率阈值突破场景，验证自动熔断与回滚",
+  "start_time": "2026-06-20T10:26:22.490352",
+  "end_time": "2026-06-20T10:26:22.490374",
+  "participants": [
+    "张三",
+    "李四",
+    "王五"
+  ],
+  "scenarios": [
+    {
+      "scenario_id": "SC4D024C69",
+      "scenario_name": "卡件率异常飙升",
+      "scenario_type": "jam_rate_anomaly",
+      "description": "模拟卡件率达到1.2%",
+      "expected_result": "系统自动熔断并回滚",
+      "actual_result": "系统于0.8秒内检测到异常，触发熔断，2.3秒内完成回滚",
+      "passed": true,
+      "metrics": {
+        "detection_latency_s": 0.8,
+        "rollback_s": 2.3
+      },
+      "issues": [],
+      "duration_seconds": 3.1
+    }
+  ],
+  "issues_found": [],
+  "action_items": [
+    {
+      "item": "每月演练一次",
+      "owner": "运维组",
+      "deadline": "每月1号",
+      "status": "待执行"
+    }
+  ],
+  "lessons_learned": [
+    "自动熔断有效降低故障影响面"
+  ],
+  "conclusion": "演练通过",
+  "overall_passed": true,
+  "extra": {}
+}

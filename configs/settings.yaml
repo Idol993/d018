@@ -1,0 +1,212 @@
+# ============================================================
+# 自动分拣设备控制系统发布与安全回滚自动化平台 - 系统配置
+# ============================================================
+
+# ---------- 系统基础配置 ----------
+system:
+  name: "自动分拣设备发布与回滚平台"
+  version: "1.0.0"
+  env: "production"
+  log_level: "INFO"
+  data_dir: "./data"
+
+# ---------- 发布前置校验 - 质量门禁阈值 ----------
+pre_check:
+  # 分拣准确率 - 基于历史包裹数据回归测试 (>=99.5%)
+  sorting_accuracy_threshold: 0.995
+  # 皮带线运行率 (>=98%)
+  belt_availability_threshold: 0.98
+  # 扫码器识别成功率 (>=99%)
+  scanner_success_rate_threshold: 0.99
+  # PLC与WCS设备联动校验开关
+  plc_wcs_handshake_check: true
+  # 指令集兼容性校验开关
+  instruction_set_compatibility_check: true
+  # 回归测试样本数量
+  regression_test_sample_size: 1000
+  # 校验超时时间(秒)
+  check_timeout: 300
+
+# ---------- 审批流转配置 ----------
+approval:
+  # 审批通道类型
+  channels:
+    normal:
+      name: "常规迭代"
+      description: "常规功能迭代发布，需四级串行审批"
+      # 四级审批矩阵：设备 -> 技术 -> 运营 -> 安全
+      approvers:
+        - stage: "equipment"
+          name: "设备安全评估"
+          role: "mechanical_electrical_engineer"
+          description: "机械与电气安全评估"
+          timeout_hours: 24
+        - stage: "technical"
+          name: "技术逻辑评估"
+          role: "control_system_engineer"
+          description: "控制逻辑与算法评估"
+          timeout_hours: 24
+        - stage: "operation"
+          name: "运营影响评估"
+          role: "operations_manager"
+          description: "吞吐时效与业务影响评估"
+          timeout_hours: 12
+        - stage: "safety"
+          name: "人员防护评估"
+          role: "safety_officer"
+          description: "急停与人员防护评估"
+          timeout_hours: 12
+      parallel: false
+      retroactive_signature: false
+
+    hotfix:
+      name: "紧急热修复"
+      description: "紧急故障修复，支持并行审批或事后补签"
+      approvers:
+        - stage: "equipment"
+          name: "设备安全评估"
+          role: "mechanical_electrical_engineer"
+          description: "机械与电气安全评估"
+          timeout_hours: 2
+        - stage: "technical"
+          name: "技术逻辑评估"
+          role: "control_system_engineer"
+          description: "控制逻辑与算法评估"
+          timeout_hours: 2
+        - stage: "operation"
+          name: "运营影响评估"
+          role: "operations_manager"
+          description: "吞吐时效与业务影响评估"
+          timeout_hours: 1
+        - stage: "safety"
+          name: "人员防护评估"
+          role: "safety_officer"
+          description: "急停与人员防护评估"
+          timeout_hours: 1
+      parallel: true
+      retroactive_signature: true
+      require_emergency_reason: true
+
+  # 默认审批人邮箱映射
+  default_approvers:
+    mechanical_electrical_engineer: ["equipment@company.com"]
+    control_system_engineer: ["tech@company.com"]
+    operations_manager: ["ops@company.com"]
+    safety_officer: ["safety@company.com"]
+
+# ---------- 灰度发布与熔断配置 ----------
+grayscale:
+  # 分拣线灰度发布顺序策略
+  release_strategy:
+    # 策略名称：先辅助线后核心线、先低流量后高流量
+    name: "auxiliary_first_then_core_low_to_high"
+    stages:
+      - stage_id: 1
+        name: "辅助分拣线-低流量"
+        line_ids: ["AUX-001", "AUX-002"]
+        description: "辅助分拣区域，低流量验证"
+        stable_monitor_minutes: 15
+        traffic_percentage: 5
+      - stage_id: 2
+        name: "辅助分拣线-中流量"
+        line_ids: ["AUX-003", "AUX-004"]
+        description: "辅助分拣区域，中流量验证"
+        stable_monitor_minutes: 20
+        traffic_percentage: 15
+      - stage_id: 3
+        name: "交叉带分拣线-低流量"
+        line_ids: ["CORE-001"]
+        description: "核心交叉带分拣线，低流量验证"
+        stable_monitor_minutes: 30
+        traffic_percentage: 20
+      - stage_id: 4
+        name: "交叉带分拣线-全流量"
+        line_ids: ["CORE-002", "CORE-003", "CORE-004"]
+        description: "核心交叉带分拣线，全流量发布"
+        stable_monitor_minutes: 60
+        traffic_percentage: 100
+
+  # 熔断阈值 - 突破任一指标立即触发熔断
+  circuit_breaker:
+    # 卡件率阈值 - 5分钟内超过0.5%触发
+    jam_rate_threshold: 0.005
+    # 错分率阈值 - 5分钟内超过0.3%触发
+    mis_sort_rate_threshold: 0.003
+    # 停机异常次数阈值 - 5分钟内超过2次触发
+    downtime_count_threshold: 2
+    # 熔断触发后自动回滚
+    auto_rollback: true
+    # 回滚后重启监控
+    restart_monitor_after_rollback: true
+    # 冷却期(分钟) - 熔断后多久才能再次尝试发布
+    cooldown_minutes: 30
+
+  # 监控拉取频率(秒)
+  monitor_interval_seconds: 300
+
+# ---------- 实时监控配置 ----------
+monitor:
+  # 指标拉取接口配置
+  metrics_endpoints:
+    jam_rate: "http://wcs.internal/api/v1/metrics/jam_rate"
+    mis_sort_rate: "http://wcs.internal/api/v1/metrics/mis_sort_rate"
+    downtime_count: "http://wcs.internal/api/v1/metrics/downtime_count"
+    sorting_accuracy: "http://wcs.internal/api/v1/metrics/sorting_accuracy"
+    belt_availability: "http://wcs.internal/api/v1/metrics/belt_availability"
+    scanner_success_rate: "http://wcs.internal/api/v1/metrics/scanner_success_rate"
+  # 请求超时时间(秒)
+  request_timeout: 10
+  # 失败重试次数
+  retry_count: 3
+  # 重试间隔(秒)
+  retry_interval: 5
+
+# ---------- 通知渠道配置 ----------
+notification:
+  enabled_channels: ["wecom", "dingtalk", "email"]
+
+  wecom:
+    enabled: true
+    webhook_url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_KEY"
+    mentioned_mobile_list: ["13800000000"]
+
+  dingtalk:
+    enabled: true
+    webhook_url: "https://oapi.dingtalk.com/robot/send?access_token=YOUR_TOKEN"
+    secret: "YOUR_SECRET"
+    at_mobiles: ["13800000000"]
+
+  email:
+    enabled: true
+    smtp_host: "smtp.company.com"
+    smtp_port: 465
+    use_ssl: true
+    sender: "deploy-platform@company.com"
+    password: "YOUR_PASSWORD"
+    receivers:
+      - "dev@company.com"
+      - "ops@company.com"
+      - "safety@company.com"
+
+# ---------- 演练与复盘报表配置 ----------
+report:
+  # 报表输出目录
+  output_dir: "./data/reports"
+  # 报表格式
+  formats: ["html", "json"]
+  # 演练记录保留天数
+  drill_retention_days: 90
+  # 复盘报表模板字段
+  drill_fields:
+    - "drill_id"
+    - "drill_name"
+    - "drill_type"
+    - "start_time"
+    - "end_time"
+    - "participants"
+    - "scenarios"
+    - "metrics_results"
+    - "issues_found"
+    - "action_items"
+    - "lessons_learned"
+    - "conclusion"
